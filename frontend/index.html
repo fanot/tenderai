@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TenderAI — умный поиск тендеров</title>
+<!--EMBEDDED_DATA-->
+<style>
+:root{
+  --bg:#f6f7fb; --surface:#ffffff; --surface-2:#f2f3f9;
+  --text:#0f172a; --muted:#64748b; --border:#e4e7ef;
+  --accent:#6d28d9; --accent-2:#8b5cf6; --accent-soft:#f2edfe;
+  --ok:#0d9488; --warn:#d97706; --danger:#dc2626;
+  --radius:14px; --shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px rgba(15,23,42,.06);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg); color:var(--text); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent); text-decoration:none}
+button{font:inherit; cursor:pointer}
+.wrap{max-width:1340px; margin:0 auto; padding:0 24px}
+
+/* ---------- header ---------- */
+header.top{
+  position:sticky; top:0; z-index:40; background:rgba(255,255,255,.86);
+  backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
+}
+.top-inner{display:flex; align-items:center; gap:24px; height:64px}
+.logo{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.02em; font-size:17px}
+.logo .mark{
+  width:30px;height:30px;border-radius:9px;flex:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:grid;place-items:center;color:#fff;font-size:15px;font-weight:800;
+}
+nav.tabs{display:flex; gap:4px; margin-left:auto}
+nav.tabs button{
+  border:0;background:transparent;color:var(--muted);padding:8px 14px;border-radius:10px;font-weight:500;
+}
+nav.tabs button:hover{background:var(--surface-2); color:var(--text)}
+nav.tabs button.active{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.badge-mode{
+  font-size:11px; padding:4px 9px; border-radius:999px; border:1px solid var(--border);
+  color:var(--muted); background:var(--surface); white-space:nowrap;
+}
+.badge-mode b{color:var(--text)}
+
+/* ---------- search hero ---------- */
+.hero{padding:26px 0 18px}
+.hero h1{font-size:26px; letter-spacing:-.03em; margin:0 0 6px}
+.hero p.sub{margin:0 0 18px; color:var(--muted)}
+.searchbar{
+  display:flex; gap:10px; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:8px; box-shadow:var(--shadow);
+}
+.searchbar input{
+  flex:1; border:0; outline:0; font-size:16px; padding:10px 12px; background:transparent; color:var(--text);
+}
+.btn{
+  border:0; border-radius:10px; padding:11px 20px; font-weight:600;
+  background:var(--accent); color:#fff; transition:.15s;
+}
+.btn:hover{background:#5b21b6}
+.btn.ghost{background:var(--surface-2); color:var(--text)}
+.btn.ghost:hover{background:#e7e9f2}
+.btn.sm{padding:7px 13px; font-size:13px; border-radius:9px}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+.chip{
+  border:1px solid var(--border); background:var(--surface); color:var(--muted);
+  border-radius:999px; padding:6px 13px; font-size:13px;
+}
+.chip:hover{border-color:var(--accent); color:var(--accent)}
+.parsed{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; min-height:0}
+.tag{
+  font-size:12px; background:var(--accent-soft); color:var(--accent);
+  padding:4px 10px; border-radius:999px; font-weight:500;
+}
+
+/* ---------- layout ---------- */
+.layout{display:grid; grid-template-columns:246px 1fr 380px; gap:20px; padding:8px 0 60px; align-items:start}
+@media(max-width:1180px){.layout{grid-template-columns:230px 1fr}.assistant{display:none}}
+@media(max-width:820px){.layout{grid-template-columns:1fr}aside.filters{display:none}}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+aside.filters{padding:16px; position:sticky; top:80px}
+.filters h3{margin:0 0 14px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+.f-group{margin-bottom:16px}
+.f-group label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:500}
+select,input[type=number]{
+  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:9px;
+  background:var(--surface); color:var(--text); font:inherit; font-size:13px; outline:0;
+}
+select:focus,input:focus{border-color:var(--accent-2)}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.switch{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); margin-bottom:9px; cursor:pointer}
+.switch input{accent-color:var(--accent); width:15px; height:15px}
+
+/* ---------- results ---------- */
+.results-head{display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
+.results-head .count{color:var(--muted); font-size:14px}
+.results-head .count b{color:var(--text)}
+.sort{margin-left:auto; width:auto; min-width:180px}
+.tender{padding:18px; margin-bottom:12px; transition:.15s; cursor:pointer}
+.tender:hover{border-color:var(--accent-2); transform:translateY(-1px)}
+.t-top{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+.pill{font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; letter-spacing:.01em}
+.pill.law{background:#eef2ff; color:#4338ca}
+.pill.status-open{background:#ecfdf5; color:#047857}
+.pill.status-other{background:var(--surface-2); color:var(--muted)}
+.pill.smp{background:#fff7ed; color:#c2410c}
+.pill.urgent{background:#fef2f2; color:#b91c1c}
+.t-title{font-size:16px; font-weight:600; letter-spacing:-.01em; margin:0 0 6px; line-height:1.4}
+.t-meta{display:flex; flex-wrap:wrap; gap:14px; color:var(--muted); font-size:13px; margin-bottom:10px}
+.t-meta span{display:inline-flex; align-items:center; gap:5px}
+.t-price{font-size:19px; font-weight:700; letter-spacing:-.02em}
+.t-foot{display:flex; align-items:center; gap:12px; margin-top:10px; flex-wrap:wrap}
+.why{font-size:12px; color:var(--muted); display:flex; gap:6px; flex-wrap:wrap}
+.why i{font-style:normal; background:var(--surface-2); padding:2px 8px; border-radius:6px}
+.score{font-family:var(--mono); font-size:11px; color:#94a3b8; margin-left:auto}
+.pager{display:flex; gap:8px; justify-content:center; margin-top:18px}
+.empty{padding:48px 20px; text-align:center; color:var(--muted)}
+
+/* ---------- assistant ---------- */
+.assistant{position:sticky; top:80px; display:flex; flex-direction:column; height:calc(100vh - 108px); overflow:hidden}
+.as-head{padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:9px}
+.as-head .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.as-head b{font-size:14px}
+.as-head small{color:var(--muted); font-size:11px; margin-left:auto}
+.as-body{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+.msg{max-width:100%; font-size:14px; line-height:1.6}
+.msg.user{align-self:flex-end; background:var(--accent); color:#fff; padding:9px 13px; border-radius:14px 14px 4px 14px; max-width:85%}
+.msg.bot{background:var(--surface-2); padding:12px 14px; border-radius:14px 14px 14px 4px; white-space:pre-wrap}
+.msg.bot .cite{
+  display:inline-block; background:var(--accent); color:#fff; border-radius:5px;
+  font-size:10px; padding:0 5px; font-weight:700; vertical-align:1px; cursor:pointer; margin:0 1px;
+}
+.sources{margin-top:10px; display:flex; flex-direction:column; gap:6px}
+.src{
+  font-size:12px; border:1px solid var(--border); background:var(--surface);
+  border-radius:9px; padding:8px 10px; cursor:pointer;
+}
+.src:hover{border-color:var(--accent-2)}
+.src b{color:var(--accent); font-family:var(--mono)}
+.as-foot{border-top:1px solid var(--border); padding:12px; display:flex; gap:8px}
+.as-foot input{flex:1; border:1px solid var(--border); border-radius:10px; padding:9px 12px; outline:0; font:inherit; font-size:14px}
+.as-warn{font-size:11px; color:var(--warn); margin-top:6px}
+.typing{display:flex; gap:4px; padding:6px 0}
+.typing i{width:6px;height:6px;border-radius:50%;background:#cbd5e1;animation:bounce 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+
+/* ---------- dashboard ---------- */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:18px}
+.kpi{padding:16px}
+.kpi .k-label{font-size:12px; color:var(--muted); margin-bottom:4px}
+.kpi .k-val{font-size:24px; font-weight:700; letter-spacing:-.02em}
+.kpi .k-sub{font-size:12px; color:var(--muted); margin-top:2px}
+.panels{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media(max-width:900px){.panels{grid-template-columns:1fr}}
+.panel{padding:18px}
+.panel h4{margin:0 0 14px; font-size:14px}
+.bar-row{display:grid; grid-template-columns:1fr 62px; gap:10px; align-items:center; margin-bottom:9px; font-size:13px}
+.bar-row .bl{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar{height:7px; background:var(--surface-2); border-radius:4px; overflow:hidden; margin-top:4px}
+.bar span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:4px}
+.bar-row .bv{text-align:right; font-family:var(--mono); font-size:12px; color:var(--muted)}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; z-index:60; padding:40px 20px; overflow-y:auto}
+.overlay.open{display:block}
+.modal{max-width:820px; margin:0 auto; background:var(--surface); border-radius:18px; padding:28px; position:relative}
+.modal h2{margin:6px 0 12px; font-size:21px; letter-spacing:-.02em; line-height:1.35}
+.modal .close{position:absolute; top:16px; right:16px; border:0; background:var(--surface-2); width:32px;height:32px;border-radius:9px; color:var(--muted); font-size:17px}
+.kv{display:grid; grid-template-columns:190px 1fr; gap:8px 16px; font-size:14px; margin:16px 0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.req{margin:14px 0 0; padding-left:18px; font-size:14px}
+.req li{margin-bottom:6px}
+.sim{display:grid; gap:8px; margin-top:10px}
+.sim a{font-size:13px; border:1px solid var(--border); border-radius:9px; padding:9px 11px; display:block; color:var(--text)}
+.sim a:hover{border-color:var(--accent-2)}
+.hr{height:1px; background:var(--border); margin:20px 0}
+.section-label{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:6px}
+.skeleton{height:96px; border-radius:var(--radius); background:linear-gradient(90deg,#eef0f6,#f7f8fc,#eef0f6); background-size:200% 100%; animation:sh 1.2s infinite; margin-bottom:12px}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="logo"><span class="mark">T</span> TenderAI</div>
+    <nav class="tabs">
+      <button data-tab="search" class="active">Поиск</button>
+      <button data-tab="dash">Аналитика</button>
+      <button data-tab="about">О сервисе</button>
+    </nav>
+    <span class="badge-mode" id="modeBadge">режим: <b>—</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= ПОИСК ================= -->
+  <section id="tab-search">
+    <div class="hero">
+      <h1>Умный поиск тендеров</h1>
+      <p class="sub">Опишите закупку обычными словами — сервис сам распознает закон, регион, бюджет и категорию.</p>
+      <div class="searchbar">
+        <input id="q" placeholder="например: разработка информационной системы в Москве до 20 млн по 44-ФЗ" autocomplete="off">
+        <button class="btn" id="goSearch">Найти</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="parsed" id="parsed"></div>
+    </div>
+
+    <div class="layout">
+      <aside class="filters card">
+        <h3>Фильтры</h3>
+        <div class="f-group"><label>Закон</label><select id="f-law"><option value="">Любой</option></select></div>
+        <div class="f-group"><label>Категория</label><select id="f-category"><option value="">Любая</option></select></div>
+        <div class="f-group"><label>Регион</label><select id="f-region"><option value="">Любой</option></select></div>
+        <div class="f-group"><label>Статус</label><select id="f-status"><option value="">Любой</option></select></div>
+        <div class="f-group">
+          <label>НМЦК, ₽</label>
+          <div class="row2">
+            <input type="number" id="f-min" placeholder="от">
+            <input type="number" id="f-max" placeholder="до">
+          </div>
+        </div>
+        <label class="switch"><input type="checkbox" id="f-active"> Только приём заявок</label>
+        <label class="switch"><input type="checkbox" id="f-smp"> Только для СМП</label>
+        <button class="btn ghost sm" id="resetFilters" style="width:100%;margin-top:8px">Сбросить</button>
+      </aside>
+
+      <div>
+        <div class="results-head">
+          <div class="count" id="count">—</div>
+          <select class="sort" id="sort">
+            <option value="relevance">По релевантности</option>
+            <option value="deadline">По сроку подачи</option>
+            <option value="nmck_desc">НМЦК: по убыванию</option>
+            <option value="nmck_asc">НМЦК: по возрастанию</option>
+            <option value="published">Сначала новые</option>
+          </select>
+        </div>
+        <div id="results"></div>
+        <div class="pager" id="pager"></div>
+      </div>
+
+      <div class="assistant card">
+        <div class="as-head">
+          <span class="dot"></span><b>RAG-ассистент</b>
+          <small id="asProvider"></small>
+        </div>
+        <div class="as-body" id="chat"></div>
+        <div class="as-foot">
+          <input id="askInput" placeholder="Спросите про требования, сроки, НМЦК…">
+          <button class="btn sm" id="askBtn">→</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= АНАЛИТИКА ================= -->
+  <section id="tab-dash" class="hidden" style="padding:26px 0 60px">
+    <h1 style="font-size:24px;letter-spacing:-.03em;margin:0 0 18px">Аналитика рынка закупок</h1>
+    <div class="kpis" id="kpis"></div>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <!-- ================= О СЕРВИСЕ ================= -->
+  <section id="tab-about" class="hidden" style="padding:26px 0 60px; max-width:820px">
+    <h1 style="font-size:24px;letter-spacing:-.03em;margin:0 0 6px">Как устроен сервис</h1>
+    <p style="color:var(--muted);margin-top:0">Прототип веб-сервиса умного поиска тендеров с RAG-ассистентом.</p>
+    <div class="card panel" style="margin-bottom:14px">
+      <h4>Конвейер обработки запроса</h4>
+      <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.9">
+        <li><b>Разбор запроса.</b> Из естественно-языковой формулировки извлекаются структурные фильтры: закон (44-ФЗ / 223-ФЗ), регион, категория, диапазон НМЦК, признак СМП, актуальность.</li>
+        <li><b>Гибридный поиск.</b> Параллельно работают BM25 (лексика, точные термины и номера) и плотные векторы (семантика, синонимы, словоформы).</li>
+        <li><b>Слияние RRF.</b> Два ранжирования объединяются методом Reciprocal Rank Fusion — устойчиво к разным шкалам оценок.</li>
+        <li><b>Фильтрация и реранк.</b> Применяются жёсткие фильтры, затем буст по свежести, статусу и совпадению атрибутов.</li>
+        <li><b>Генерация ответа.</b> Найденные фрагменты попадают в контекст LLM; каждое утверждение сопровождается ссылкой на источник [n].</li>
+        <li><b>Проверка ссылок.</b> Guardrail отклоняет ответы со ссылками на несуществующие фрагменты.</li>
+      </ol>
+    </div>
+    <div class="card panel">
+      <h4>Технологический стек</h4>
+      <dl class="kv">
+        <dt>Backend</dt><dd>Python 3.11, FastAPI, Pydantic v2</dd>
+        <dt>Поиск</dt><dd>BM25 (Okapi) + плотные векторы, RRF-слияние</dd>
+        <dt>Эмбеддинги</dt><dd>сменный провайдер: локальный / OpenAI / YandexGPT / GigaChat</dd>
+        <dt>Генерация</dt><dd>сменный провайдер LLM + офлайн-экстрактивный фолбэк</dd>
+        <dt>Frontend</dt><dd>одностраничное приложение без сборки (HTML + CSS + vanilla JS)</dd>
+        <dt>Тестирование</dt><dd>pytest: API, качество поиска (Recall@k, MRR), guardrails RAG</dd>
+        <dt>Источник данных</dt><dd>карточки закупок в формате ЕИС; адаптер под zakupki.gov.ru</dd>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<!-- Офлайн-движок: используется, когда backend недоступен (standalone-демо) -->
+<script src="/static/offline-engine.js"></script>
+<!--OFFLINE_ENGINE-->
+
+<script>
+/* ============================================================
+   TenderAI — фронтенд-прототип.
+   Работает поверх REST API backend'а; при недоступности API
+   переключается на встроенный демо-движок (offline-режим).
+   ============================================================ */
+const API = '';
+let MODE = 'api';           // 'api' | 'offline'
+let META = null;
+let STATE = {page:1, sort:'relevance'};
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = v => new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(v) + ' ₽';
+const fmtDate = d => new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});
+
+const SUGGESTIONS = [
+  'разработка информационной системы в Москве до 20 млн по 44-ФЗ',
+  'поставка ноутбуков для школ Казань',
+  'капитальный ремонт здания от 10 млн до 100 млн',
+  'уборка помещений для СМП актуальные',
+  'закупки лекарственных препаратов 223-ФЗ',
+];
+
+/* ---------------- транспорт ---------------- */
+async function api(path, opts){
+  const r = await fetch(API + path, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function boot(){
+  try{
+    META = await api('/api/meta');
+    MODE = 'api';
+  }catch(e){
+    if(!window.__EMBEDDED_TENDERS__){
+      $('#results').innerHTML = '<div class="card empty">Backend недоступен и встроенные демо-данные не найдены.<br>Запустите <code>uvicorn app.main:app</code> из каталога backend.</div>';
+      return;
+    }
+    MODE = 'offline';
+    META = Offline.meta();
+  }
+  $('#modeBadge').innerHTML = 'режим: <b>' + (MODE==='api'?'API':'офлайн-демо') + '</b>';
+  $('#asProvider').textContent = META.llm_provider ? ('LLM: ' + META.llm_provider) : '';
+  fillFilters();
+  renderChips();
+  search();
+  greet();
+}
+
+function fillFilters(){
+  const add = (sel, list) => list.forEach(v => {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; $(sel).appendChild(o);
+  });
+  add('#f-law', META.laws); add('#f-category', META.categories);
+  add('#f-region', META.regions); add('#f-status', META.statuses);
+}
+
+function renderChips(){
+  $('#chips').innerHTML = SUGGESTIONS.map(s=>`<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join('');
+  $$('#chips .chip').forEach(b => b.onclick = () => { $('#q').value = b.dataset.q; STATE.page=1; search(); });
+}
+
+function currentFilters(){
+  return {
+    law: $('#f-law').value || null,
+    region: $('#f-region').value || null,
+    category: $('#f-category').value || null,
+    status: $('#f-status').value || null,
+    nmck_min: $('#f-min').value ? +$('#f-min').value : null,
+    nmck_max: $('#f-max').value ? +$('#f-max').value : null,
+    smp_only: $('#f-smp').checked ? true : null,
+    only_active: $('#f-active').checked,
+  };
+}
+
+/* ---------------- поиск ---------------- */
+async function search(){
+  const body = {query:$('#q').value, filters:currentFilters(), page:STATE.page, page_size:10, sort:STATE.sort};
+  $('#results').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  let data;
+  try{
+    data = MODE==='api' ? await api('/api/search',{method:'POST',body:JSON.stringify(body)}) : Offline.search(body);
+  }catch(e){ data = Offline.search(body); }
+  renderParsed(data.parsed_filters);
+  renderResults(data);
+}
+
+function renderParsed(f){
+  if(!f){ $('#parsed').innerHTML=''; return; }
+  const tags = (f.matched||[]).map(m=>`<span class="tag">${esc(m)}</span>`);
+  $('#parsed').innerHTML = tags.length
+    ? '<span style="font-size:12px;color:var(--muted);align-self:center;margin-right:2px">распознано:</span>' + tags.join('')
+    : '';
+}
+
+function renderResults(data){
+  $('#count').innerHTML = `Найдено <b>${data.total}</b> закупок · ${data.took_ms} мс`;
+  if(!data.results.length){
+    $('#results').innerHTML = '<div class="card empty">Ничего не найдено. Попробуйте расширить бюджет или снять фильтр по региону.</div>';
+    $('#pager').innerHTML=''; return;
+  }
+  $('#results').innerHTML = data.results.map(cardHTML).join('');
+  $$('#results .tender').forEach(el => el.onclick = () => openTender(el.dataset.id));
+
+  const pages = Math.ceil(data.total / data.page_size);
+  $('#pager').innerHTML = pages<=1 ? '' :
+    `<button class="btn ghost sm" ${data.page<=1?'disabled':''} id="prev">← Назад</button>
+     <span style="align-self:center;font-size:13px;color:var(--muted)">${data.page} из ${pages}</span>
+     <button class="btn ghost sm" ${data.page>=pages?'disabled':''} id="next">Вперёд →</button>`;
+  if($('#prev')) $('#prev').onclick = () => { STATE.page--; search(); window.scrollTo({top:0,behavior:'smooth'}); };
+  if($('#next')) $('#next').onclick = () => { STATE.page++; search(); window.scrollTo({top:0,behavior:'smooth'}); };
+}
+
+function cardHTML(t){
+  const open = t.status === 'Подача заявок';
+  const urgent = open && t.days_left >= 0 && t.days_left <= 7;
+  return `<article class="card tender" data-id="${t.id}">
+    <div class="t-top">
+      <span class="pill law">${esc(t.law)}</span>
+      <span class="pill ${open?'status-open':'status-other'}">${esc(t.status)}</span>
+      ${t.smp_only?'<span class="pill smp">СМП</span>':''}
+      ${urgent?`<span class="pill urgent">осталось ${t.days_left} дн.</span>`:''}
+      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:#94a3b8">№${esc(t.registry_number)}</span>
+    </div>
+    <h3 class="t-title">${esc(t.subject)}</h3>
+    <div class="t-meta">
+      <span>🏛 ${esc(t.customer)}</span>
+      <span>📍 ${esc(t.region)}</span>
+      <span>🗂 ${esc(t.category)}</span>
+      <span>⏳ до ${fmtDate(t.deadline_at)}</span>
+    </div>
+    <div class="t-price">${money(t.nmck)}</div>
+    <div class="t-foot">
+      <div class="why">${(t.explain||[]).map(e=>`<i>${esc(e)}</i>`).join('')}</div>
+      <span class="score">score ${t.score.toFixed(4)}</span>
+    </div>
+  </article>`;
+}
+
+/* ---------------- карточка тендера ---------------- */
+async function openTender(id){
+  let t;
+  try{ t = MODE==='api' ? await api('/api/tenders/'+id) : Offline.tender(id); }
+  catch(e){ t = Offline.tender(id); }
+  $('#modal').innerHTML = `
+    <button class="close" id="closeModal">✕</button>
+    <div class="t-top">
+      <span class="pill law">${esc(t.law)}</span>
+      <span class="pill ${t.status==='Подача заявок'?'status-open':'status-other'}">${esc(t.status)}</span>
+      ${t.smp_only?'<span class="pill smp">только СМП</span>':''}
+    </div>
+    <h2>${esc(t.subject)}</h2>
+    <div class="t-price" style="font-size:24px">${money(t.nmck)}</div>
+    <dl class="kv">
+      <dt>Реестровый номер</dt><dd><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.registry_number)} ↗</a></dd>
+      <dt>Заказчик</dt><dd>${esc(t.customer)} · ИНН ${esc(t.customer_inn)}</dd>
+      <dt>Регион</dt><dd>${esc(t.region)}</dd>
+      <dt>Категория / ОКПД2</dt><dd>${esc(t.category)} · ${esc(t.okpd2)}</dd>
+      <dt>Способ определения</dt><dd>${esc(t.procedure)}</dd>
+      <dt>Электронная площадка</dt><dd>${esc(t.platform)}</dd>
+      <dt>Обеспечение заявки</dt><dd>${t.application_security_pct}%</dd>
+      <dt>Обеспечение контракта</dt><dd>${t.contract_security_pct}%</dd>
+      <dt>Опубликовано</dt><dd>${fmtDate(t.published_at)}</dd>
+      <dt>Приём заявок до</dt><dd>${fmtDate(t.deadline_at)}${t.days_left>=0?` · осталось ${t.days_left} дн.`:''}</dd>
+    </dl>
+    <div class="section-label">Требования к участникам</div>
+    <ul class="req">${t.requirements.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
+    ${t.advantages?`<div class="section-label" style="margin-top:14px">Преимущества и ограничения</div><p style="font-size:14px;margin:4px 0 0">${esc(t.advantages)}</p>`:''}
+    <div class="hr"></div>
+    <div class="section-label">Описание закупки</div>
+    <p style="font-size:14px;margin:4px 0 0">${esc(t.description)}</p>
+    ${(t.similar&&t.similar.length)?`<div class="hr"></div><div class="section-label">Похожие закупки</div>
+      <div class="sim">${t.similar.map(s=>`<a href="#" data-sim="${s.id}">${esc(s.subject)} — ${money(s.nmck)}, ${esc(s.region)}</a>`).join('')}</div>`:''}
+    <div style="margin-top:20px;display:flex;gap:8px">
+      <button class="btn" id="askAbout">Спросить ассистента об этой закупке</button>
+    </div>`;
+  $('#overlay').classList.add('open');
+  $('#closeModal').onclick = closeModal;
+  $$('#modal [data-sim]').forEach(a => a.onclick = ev => { ev.preventDefault(); openTender(a.dataset.sim); });
+  $('#askAbout').onclick = () => { closeModal(); ask('Какие требования и сроки по закупке: ' + t.subject); };
+}
+function closeModal(){ $('#overlay').classList.remove('open'); }
+$('#overlay').onclick = e => { if(e.target.id==='overlay') closeModal(); };
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+/* ---------------- ассистент ---------------- */
+function greet(){
+  addMsg('bot',
+    'Здравствуйте! Я помогу найти закупки и разобраться в условиях.\n\n' +
+    'Спросите, например:\n• «какие требования при закупке медицинского оборудования»\n' +
+    '• «ближайшие сроки подачи по ИТ-закупкам в Москве»\n• «сколько всего закупок по строительству и на какую сумму»', []);
+}
+function addMsg(role, text, sources, warnings){
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if(role==='bot'){
+    let html = esc(text).replace(/\[(\d+)\]/g, (m,n)=>`<span class="cite" data-n="${n}">${n}</span>`);
+    if(sources && sources.length){
+      html += '<div class="sources">' + sources.map(s=>
+        `<div class="src" data-tid="${s.tender_id}"><b>[${s.n}]</b> ${esc(s.title)}<br><span style="color:var(--muted)">${esc(s.section)} · №${esc(s.registry_number)}</span></div>`
+      ).join('') + '</div>';
+    }
+    if(warnings && warnings.length) html += `<div class="as-warn">⚠ ${warnings.map(esc).join('; ')}</div>`;
+    div.innerHTML = html;
+  } else div.textContent = text;
+  $('#chat').appendChild(div);
+  $$('#chat .src').forEach(el => el.onclick = () => openTender(el.dataset.tid));
+  $$('#chat .cite').forEach(el => el.onclick = () => {
+    const src = [...$$('#chat .src')].find(s => s.querySelector('b').textContent === '['+el.dataset.n+']');
+    if(src) openTender(src.dataset.tid);
+  });
+  $('#chat').scrollTop = $('#chat').scrollHeight;
+}
+async function ask(text){
+  if(!text.trim()) return;
+  addMsg('user', text);
+  const t = document.createElement('div');
+  t.className = 'msg bot'; t.innerHTML = '<div class="typing"><i></i><i></i><i></i></div>';
+  $('#chat').appendChild(t); $('#chat').scrollTop = $('#chat').scrollHeight;
+  let res;
+  try{
+    res = MODE==='api' ? await api('/api/assistant/ask',{method:'POST',body:JSON.stringify({query:text,top_k:8,context_query:$('#q').value})})
+                       : Offline.ask(text, $('#q').value);
+  }catch(e){ res = Offline.ask(text, $('#q').value); }
+  t.remove();
+  addMsg('bot', res.answer, res.sources, res.warnings);
+  $('#asProvider').textContent = 'LLM: ' + res.provider + ' · ' + res.took_ms + ' мс';
+}
+
+/* ---------------- аналитика ---------------- */
+async function loadDash(){
+  let d;
+  try{ d = MODE==='api' ? await api('/api/analytics/overview') : Offline.analytics(); }
+  catch(e){ d = Offline.analytics(); }
+  $('#kpis').innerHTML = [
+    ['Всего закупок', d.total, 'в индексе сервиса'],
+    ['Идёт приём заявок', d.active, 'доступны для подачи'],
+    ['Суммарная НМЦК', money(d.total_nmck), 'по всем закупкам'],
+    ['Средняя НМЦК', money(d.avg_nmck), 'на одну закупку'],
+    ['Доля закупок для СМП', d.smp_share + '%', 'ст. 30 44-ФЗ'],
+  ].map(([l,v,s])=>`<div class="card kpi"><div class="k-label">${l}</div><div class="k-val">${v}</div><div class="k-sub">${s}</div></div>`).join('');
+
+  const maxCat = Math.max(...d.by_category.map(c=>c.count));
+  const maxReg = Math.max(...d.by_region.map(c=>c.count));
+  $('#panels').innerHTML = `
+    <div class="card panel"><h4>Закупки по категориям</h4>
+      ${d.by_category.map(c=>`<div class="bar-row"><div><div class="bl">${esc(c.category)}</div><div class="bar"><span style="width:${100*c.count/maxCat}%"></span></div></div><div class="bv">${c.count}</div></div>`).join('')}
+    </div>
+    <div class="card panel"><h4>Закупки по регионам</h4>
+      ${d.by_region.slice(0,10).map(c=>`<div class="bar-row"><div><div class="bl">${esc(c.region)}</div><div class="bar"><span style="width:${100*c.count/maxReg}%"></span></div></div><div class="bv">${c.count}</div></div>`).join('')}
+    </div>
+    <div class="card panel"><h4>Распределение по законам</h4>
+      ${Object.entries(d.by_law).map(([k,v])=>`<div class="bar-row"><div><div class="bl">${esc(k)}</div><div class="bar"><span style="width:${100*v/d.total}%"></span></div></div><div class="bv">${v}</div></div>`).join('')}
+      <h4 style="margin-top:18px">Объём НМЦК по категориям</h4>
+      ${d.by_category.slice(0,6).map(c=>`<div class="bar-row"><div><div class="bl">${esc(c.category)}</div><div class="bar"><span style="width:${100*c.nmck/Math.max(...d.by_category.map(x=>x.nmck))}%"></span></div></div><div class="bv">${(c.nmck/1e6).toFixed(0)}М</div></div>`).join('')}
+    </div>
+    <div class="card panel"><h4>Закрываются в ближайшую неделю</h4>
+      ${d.closing_soon.length ? d.closing_soon.map(c=>`<div class="bar-row" style="grid-template-columns:1fr 92px"><div class="bl" style="cursor:pointer" data-tid="${c.id}">${esc(c.subject)}</div><div class="bv">${c.days_left} дн.</div></div>`).join('') : '<div style="color:var(--muted);font-size:13px">Нет закупок с дедлайном в ближайшие 7 дней.</div>'}
+    </div>`;
+  $$('#panels [data-tid]').forEach(el => el.onclick = () => openTender(el.dataset.tid));
+}
+
+/* ---------------- события ---------------- */
+$('#goSearch').onclick = () => { STATE.page=1; search(); };
+$('#q').addEventListener('keydown', e => { if(e.key==='Enter'){ STATE.page=1; search(); } });
+$('#sort').onchange = e => { STATE.sort = e.target.value; STATE.page=1; search(); };
+['#f-law','#f-category','#f-region','#f-status','#f-min','#f-max','#f-active','#f-smp']
+  .forEach(s => $(s).addEventListener('change', () => { STATE.page=1; search(); }));
+$('#resetFilters').onclick = () => {
+  ['#f-law','#f-category','#f-region','#f-status','#f-min','#f-max'].forEach(s=>$(s).value='');
+  $('#f-active').checked = false; $('#f-smp').checked = false; STATE.page=1; search();
+};
+$('#askBtn').onclick = () => { const v = $('#askInput').value; $('#askInput').value=''; ask(v); };
+$('#askInput').addEventListener('keydown', e => { if(e.key==='Enter'){ const v=e.target.value; e.target.value=''; ask(v); } });
+$$('nav.tabs button').forEach(b => b.onclick = () => {
+  $$('nav.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  ['search','dash','about'].forEach(t => $('#tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+  if(b.dataset.tab==='dash') loadDash();
+});
+
+boot();
+</script>
+</body>
+</html>
