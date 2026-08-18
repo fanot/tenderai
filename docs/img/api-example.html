@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<style>
+body{margin:0;background:#fff;font-family:'Inter',Arial,sans-serif;color:#0f172a}
+.diagram{width:1000px;padding:24px 26px;background:#fff}
+h4{margin:0 0 8px;font-size:14px;letter-spacing:-.01em}
+h4 span{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f2edfe;color:#6d28d9;
+  padding:2px 8px;border-radius:6px;margin-right:8px;font-weight:700}
+pre{
+  margin:0 0 18px; background:#0f172a; color:#e2e8f0; border-radius:10px; padding:14px 16px;
+  font-family:ui-monospace,Menlo,monospace; font-size:12px; line-height:1.55; overflow:hidden;
+  white-space:pre-wrap; word-break:break-word;
+}
+pre .k{color:#93c5fd}.s{color:#86efac}.n{color:#fca5a5}.c{color:#94a3b8}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.cap{font-size:11px;color:#8a93a5;margin-top:2px}
+</style></head><body>
+<div class="diagram">
+  <h4><span>POST</span>/api/search — поиск закупок по запросу на естественном языке</h4>
+<pre><span class="c">$ curl -X POST http://localhost:8000/api/search \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"разработка информационной системы в Москве до 20 млн по 44-ФЗ"}'</span>
+
+{
+  <span class="k">"total"</span>: <span class="n">4</span>, <span class="k">"page"</span>: <span class="n">1</span>, <span class="k">"page_size"</span>: <span class="n">10</span>, <span class="k">"took_ms"</span>: <span class="n">85.63</span>,
+  <span class="k">"parsed_filters"</span>: {
+    <span class="k">"law"</span>: <span class="s">"44-ФЗ"</span>, <span class="k">"region"</span>: <span class="s">"г. Москва"</span>, <span class="k">"category"</span>: <span class="s">"ИТ и разработка ПО"</span>,
+    <span class="k">"nmck_max"</span>: <span class="n">20000000.0</span>, <span class="k">"text"</span>: <span class="s">"разработка информационной системы москве"</span>,
+    <span class="k">"matched"</span>: [<span class="s">"закон 44-ФЗ"</span>, <span class="s">"НМЦК до 20 000 000 ₽"</span>, <span class="s">"регион: г. Москва"</span>,
+                <span class="s">"категория: ИТ и разработка ПО"</span>]
+  },
+  <span class="k">"results"</span>: [{
+    <span class="k">"id"</span>: <span class="s">"T-0089"</span>, <span class="k">"registry_number"</span>: <span class="s">"393914397609"</span>,
+    <span class="k">"subject"</span>: <span class="s">"Разработка и внедрение информационной системы городской клинической больницы №4"</span>,
+    <span class="k">"customer"</span>: <span class="s">"ГКУ \"Департамент информационных технологий\""</span>, <span class="k">"region"</span>: <span class="s">"г. Москва"</span>,
+    <span class="k">"nmck"</span>: <span class="n">1350000.0</span>, <span class="k">"deadline_at"</span>: <span class="s">"2026-08-27"</span>, <span class="k">"days_left"</span>: <span class="n">9</span>,
+    <span class="k">"status"</span>: <span class="s">"Подача заявок"</span>, <span class="k">"score"</span>: <span class="n">0.0436</span>,
+    <span class="k">"explain"</span>: [<span class="s">"приём заявок открыт"</span>, <span class="s">"совпадение по категории"</span>, <span class="s">"совпадение по региону"</span>]
+  }]
+}</pre>
+
+  <h4><span>POST</span>/api/assistant/ask — вопрос RAG-ассистенту</h4>
+<pre><span class="c">$ curl -X POST http://localhost:8000/api/assistant/ask \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"какие требования при закупке медицинского оборудования"}'</span>
+
+{
+  <span class="k">"intent"</span>: <span class="s">"requirements"</span>, <span class="k">"provider"</span>: <span class="s">"local"</span>, <span class="k">"took_ms"</span>: <span class="n">70.37</span>, <span class="k">"warnings"</span>: [],
+  <span class="k">"answer"</span>: <span class="s">"Нашёл 8 подходящих закупок (категория: Медицина и фармацевтика).\n\n</span>
+<span class="s">            Ключевые требования к участникам по найденным закупкам:\n</span>
+<span class="s">            • Поставка медицинского оборудования … — Наличие лицензии на</span>
+<span class="s">              фармацевтическую деятельность; … Обеспечение исполнения контракта — 5% НМЦК. [1]"</span>,
+  <span class="k">"sources"</span>: [{
+    <span class="k">"n"</span>: <span class="n">1</span>, <span class="k">"tender_id"</span>: <span class="s">"T-0214"</span>, <span class="k">"registry_number"</span>: <span class="s">"327141640506"</span>,
+    <span class="k">"section"</span>: <span class="s">"Требования и описание"</span>,
+    <span class="k">"url"</span>: <span class="s">"https://zakupki.gov.ru/epz/order/notice/view/common-info.html?regNumber=327141640506"</span>
+  }]
+}</pre>
+  <div class="cap">Примеры получены обращением к работающему прототипу; значения полей приведены сокращённо.</div>
+</div>
+</body></html>

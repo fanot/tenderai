@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<style>
+body{margin:0;background:#fff;font-family:'Inter',Arial,sans-serif;color:#0f172a}
+.diagram{width:1040px;padding:28px 30px;background:#fff}
+.row{display:flex; align-items:stretch; gap:0; margin-bottom:0}
+.stage{
+  border:1.5px solid #ddd7f5; border-radius:12px; padding:12px 16px; background:#faf8ff;
+  flex:1; text-align:center;
+}
+.stage .t{font-weight:700; font-size:14px; margin-bottom:3px}
+.stage .d{font-size:11.5px; color:#5b6478; line-height:1.35}
+.arrow{display:grid; place-items:center; width:34px; color:#6d28d9; font-size:20px; font-weight:700}
+.varr{text-align:center; color:#6d28d9; font-size:20px; font-weight:700; line-height:1; margin:7px 0}
+.split{display:flex; gap:14px}
+.split .stage{background:#fff; border-color:#e4e7ef}
+.io{
+  background:linear-gradient(135deg,#6d28d9,#8b5cf6); color:#fff; border:0;
+  border-radius:12px; padding:11px 16px; text-align:center; font-weight:700; font-size:14px;
+}
+.guard{background:#f0fdf9; border-color:#b9e6dd}
+.note{font-size:11px; color:#8a93a5; text-align:center; margin-top:12px}
+</style></head><body>
+<div class="diagram">
+  <div class="io">Запрос пользователя на естественном языке</div>
+  <div class="varr">↓</div>
+
+  <div class="stage">
+    <div class="t">1. Разбор запроса (query_parser)</div>
+    <div class="d">Извлечение структурных фильтров: закон (44-ФЗ / 223-ФЗ), регион, категория,
+      диапазон НМЦК, признак СМП, актуальность. Очистка поисковой строки от служебных слов</div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="split">
+    <div class="stage">
+      <div class="t">2а. Лексический поиск — BM25</div>
+      <div class="d">Точные термины, коды ОКПД2, реестровые номера.<br>
+        Стемминг русского языка, исправление опечаток</div>
+    </div>
+    <div class="stage">
+      <div class="t">2б. Семантический поиск — плотные векторы</div>
+      <div class="d">Синонимы и словоформы.<br>
+        Сменный провайдер эмбеддингов</div>
+    </div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="stage">
+    <div class="t">3. Слияние ранжирований — Reciprocal Rank Fusion</div>
+    <div class="d">Объединение двух списков без калибровки шкал оценок</div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="stage">
+    <div class="t">4. Жёсткие фильтры и реранжирование</div>
+    <div class="d">Применение распознанных фильтров, ограниченная надбавка за свежесть,
+      статус приёма заявок и совпадение атрибутов (не более 20 %)</div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="stage">
+    <div class="t">5. Сборка контекста и генерация ответа</div>
+    <div class="d">Нумерованные фрагменты карточек закупок передаются языковой модели
+      с инструкцией отвечать только по контексту и ставить ссылки [n]</div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="stage guard">
+    <div class="t">6. Проверка ответа (guardrails)</div>
+    <div class="d">Контроль того, что каждая ссылка [n] соответствует реальному источнику;
+      при отсутствии данных — прямое сообщение об этом</div>
+  </div>
+  <div class="varr">↓</div>
+
+  <div class="io">Ответ со ссылками на карточки закупок</div>
+  <div class="note">Рисунок подготовлен по исходному коду модулей backend/app/rag/</div>
+</div>
+</body></html>
