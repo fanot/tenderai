@@ -16,6 +16,15 @@
 
 ---
 
+## Живая версия
+
+* Сайт стартап-проекта — https://fanot.github.io/tenderai/
+* Интерактивный прототип сервиса — https://fanot.github.io/tenderai/demo.html
+
+Сайт публикуется автоматически из ветки `main` (см. `.github/workflows/deploy-pages.yml`).
+
+---
+
 ## Быстрый старт
 
 ### Вариант 1. Без установки — автономный HTML-прототип
