@@ -15,7 +15,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, ImageRun,
   Footer, PageNumber, convertMillimetersToTwip,
-  Tab, TabStopType, LeaderType, LineRuleType, ExternalHyperlink, TableOfContents,
+  Tab, TabStopType, LeaderType, LineRuleType, ExternalHyperlink,
 } = require("docx");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -283,15 +283,9 @@ children.push(
 
 // --------------------------- СОДЕРЖАНИЕ ------------------------------
 children.push(HS("Содержание", { inToc: false }));
-// Содержание — автоматическое поле Word: номера страниц проставляются по фактической
-// вёрстке в Word, которая отличается от вёрстки сборщика
-children.push(
-  new TableOfContents("Содержание", {
-    hyperlink: true,
-    headingStyleRange: "1-2",
-    stylesWithLevels: [],
-  })
-);
+// Содержание со статическими номерами: номера рассчитываются вторым проходом
+// сборки и масштабируются под фактический объём документа в Word
+TOC_ENTRIES.forEach(([lvl, title]) => children.push(TOCLINE(lvl, title)));
 
 // ---------------------------- ВВЕДЕНИЕ -------------------------------
 children.push(HS("Введение"));
@@ -840,7 +834,6 @@ children.push(HS("Список использованных источников
 // =====================================================================
 const doc = new Document({
   // Word обновляет поля (в том числе содержание) при открытии документа
-  features: { updateFields: true },
   creator: "Янышевская К. В.",
   title: "Отчёт о выполнении Работ (заключительный)",
   description: "Создание веб-сервиса умного поиска тендеров с помощью искусственного интеллекта",

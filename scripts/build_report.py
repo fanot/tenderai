@@ -93,7 +93,16 @@ def main() -> None:
         else:
             print(f"  ! не найден заголовок: {title}", file=sys.stderr)
 
-    total = FORCE_PAGES or (len([p for p in pages if p.strip()]) + TITLE_PAGE_OFFSET)
+    own_total = len([p for p in pages if p.strip()]) + TITLE_PAGE_OFFSET
+    total = FORCE_PAGES or own_total
+
+    # Вёрстка Word отличается от вёрстки сборщика, поэтому номера страниц
+    # содержания линейно пересчитываются под объём, заявленный в реферате.
+    if FORCE_PAGES and own_total > 1:
+        scale = (FORCE_PAGES - 1) / (own_total - 1)
+        mapping = {
+            k: min(FORCE_PAGES, 1 + round((v - 1) * scale)) for k, v in mapping.items()
+        }
     TOC_JSON.write_text(json.dumps(mapping, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print(f"Проход 2: сборка с номерами страниц (объём отчёта — {total} с.)…")
