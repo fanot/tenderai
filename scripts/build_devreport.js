@@ -335,9 +335,6 @@ const children = [
     borders: BORDERS,
     rows,
   }),
-  P("", { after: 240 }),
-  P("Получатель гранта ____________________ / Янышевская К. В. /"),
-  P("«____» ______________ 2026 г."),
 ];
 
 const doc = new Document({
