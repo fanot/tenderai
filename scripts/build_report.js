@@ -15,7 +15,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, ImageRun,
   Footer, PageNumber, convertMillimetersToTwip,
-  Tab, TabStopType, LeaderType, LineRuleType,
+  Tab, TabStopType, LeaderType, LineRuleType, ExternalHyperlink,
 } = require("docx");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -137,6 +137,23 @@ function TOCLINE(level, title) {
   });
 }
 
+/** Кликабельная гиперссылка */
+function LINK(url, text, size = SIZE) {
+  return new ExternalHyperlink({
+    link: url,
+    children: [
+      new TextRun({
+        text: text || url,
+        font: FONT,
+        size,
+        style: "Hyperlink",
+        color: "0563C1",
+        underline: {},
+      }),
+    ],
+  });
+}
+
 /** Растровая иллюстрация с подрисуночной подписью */
 function FIG(file, caption, wPx, hPx) {
   return [
@@ -167,8 +184,17 @@ function TBL(caption, headers, rows, widths, { small = false, numeric = false } 
   const total = widths.reduce((a, b) => a + b, 0);
   const cols = widths.map((w) => Math.round((w * CONTENT_W) / total));
 
-  const cell = (text, head, i) =>
-    new TableCell({
+  // Значение ячейки: строка либо {text, link} — во втором случае вставляется
+  // кликабельная гиперссылка
+  const cell = (value, head, i) => {
+    const kids =
+      value && typeof value === "object" && value.link
+        ? [
+            ...(value.text ? [new TextRun({ text: value.text, font: FONT, size: fsz })] : []),
+            LINK(value.link, value.label || value.link, fsz),
+          ]
+        : [new TextRun({ text: String(value), font: FONT, size: fsz, bold: head })];
+    return new TableCell({
       width: { size: cols[i], type: WidthType.DXA },
       shading: head ? { type: ShadingType.CLEAR, fill: "F2EDFE" } : undefined,
       margins: { top: 50, bottom: 50, left: 80, right: 80 },
@@ -176,10 +202,11 @@ function TBL(caption, headers, rows, widths, { small = false, numeric = false } 
         new Paragraph({
           alignment: numeric && i > 0 ? AlignmentType.RIGHT : AlignmentType.LEFT,
           spacing: { line: 240 },
-          children: [new TextRun({ text, font: FONT, size: fsz, bold: head })],
+          children: kids,
         }),
       ],
     });
+  };
 
   return [
     new Paragraph({
@@ -200,7 +227,7 @@ function TBL(caption, headers, rows, widths, { small = false, numeric = false } 
       },
       rows: [
         new TableRow({ tableHeader: true, children: headers.map((h, i) => cell(h, true, i)) }),
-        ...rows.map((r) => new TableRow({ children: r.map((c, i) => cell(String(c), false, i)) })),
+        ...rows.map((r) => new TableRow({ children: r.map((c, i) => cell(c, false, i)) })),
       ],
     }),
     new Paragraph({ spacing: { after: 160 }, children: [] }),
@@ -727,10 +754,8 @@ children.push(H2("5.1 Требования, структура и содержа
 children.push(
   P(
     "Сайт стартап-проекта создан с учётом требований, предъявляемых к результатам " +
-    "программы: на главной странице размещены сведения о продукте, логотипы Фонда " +
-    "содействия инновациям и мероприятия «Платформа университетского технологического " +
-    "предпринимательства», а также указание на поддержку проекта. Соответствие сайта " +
-    "предъявляемым требованиям приведено в таблице 9."
+    "программы: на главной странице размещены сведения о продукте, логотипы партнёров " +
+    "и указание на поддержку проекта. Соответствие сайта требованиям — в таблице 9."
   )
 );
 children.push(
@@ -740,8 +765,9 @@ children.push(
     [
       ["Сведения о новом товаре, технологии или услуге", "Разделы «Проблема», «Решение», «Как это работает» с описанием продукта и конвейера обработки запроса"],
       ["Логотипы Фонда содействия инновациям и Платформы университетского технологического предпринимательства на главной странице", "Блок «При поддержке» в первом экране сайта, а также раздел «Партнёры»"],
-      ["Указание на поддержку проекта", "Формулировка о реализации проекта при поддержке Фонда содействия инновациям размещена в первом экране, в разделе «Партнёры» и в нижнем колонтитуле"],
-      ["Доступность сайта в сети Интернет", "Сайт опубликован по адресу https://fanot.github.io/tenderai/"],
+      ["Указание на поддержку проекта", "Размещена дословная формулировка: «Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».» — в первом экране, в разделе «Партнёры» и в нижнем колонтитуле"],
+      ["Контактные данные организации", "В разделе «Контакты» и в нижнем колонтитуле указаны наименование и юридический адрес ООО «НейроТендер», ИНН и ОГРН, адрес электронной почты и телефон для связи"],
+      ["Доступность сайта в сети Интернет", { text: "Сайт опубликован по адресу ", link: "https://fanot.github.io/tenderai/" }],
     ],
     [38, 62],
     { small: true }
@@ -751,29 +777,44 @@ children.push(
   P(
     "Сайт выполнен в виде одностраничного ресурса с разделами: проблема, решение, принцип " +
     "работы сервиса, рынок и модель монетизации, дорожная карта, команда, партнёры " +
-    "и контакты. С сайта доступен интерактивный прототип сервиса. Первый экран сайта " +
-    "приведён на рисунке 5, блок сведений о партнёрах — на рисунке 6."
+    "и контакты. В разделе «Контакты» и в нижнем колонтитуле указаны реквизиты " +
+    "и контактные данные организации проекта — ООО «НейроТендер». С сайта доступен " +
+    "интерактивный прототип сервиса. Первый экран сайта приведён на рисунке 5, блок " +
+    "сведений о партнёрах — на рисунке 6."
   )
 );
-children.push(...FIG("fig-site-hero.png", "Рисунок 5 – Главная страница сайта стартап-проекта", 390, 305));
-children.push(...FIG("fig-site-partners.png", "Рисунок 6 – Раздел «Партнёры» сайта стартап-проекта", 415, 257));
+children.push(...FIG("fig-site-hero.png", "Рисунок 5 – Главная страница сайта стартап-проекта", 350, 274));
+children.push(...FIG("fig-site-partners.png", "Рисунок 6 – Раздел «Партнёры» сайта стартап-проекта", 375, 232));
 
 children.push(H2("5.2 Размещение и сопровождение сайта"));
 children.push(
-  P(
-    "Сайт размещён на платформе GitHub Pages по адресу https://fanot.github.io/tenderai/ " +
-    "и не требует расходов на хостинг. Публикация автоматизирована: изменения в основной " +
-    "ветке репозитория проекта инициируют сборку и обновление сайта без ручных операций. " +
-    "Вёрстка адаптивна и корректно отображается на мобильных устройствах."
-  )
+  P([
+    run("Сайт размещён на платформе GitHub Pages по адресу "),
+    LINK("https://fanot.github.io/tenderai/", "https://fanot.github.io/tenderai/"),
+    run(
+      " и не требует расходов на хостинг. Публикация автоматизирована: изменения в основной " +
+      "ветке репозитория проекта инициируют сборку и обновление сайта без ручных операций. " +
+      "Вёрстка адаптивна и корректно отображается на мобильных устройствах."
+    ),
+  ])
+);
+children.push(
+  P([
+    run("Адреса ресурсов проекта: сайт стартап-проекта — "),
+    LINK("https://fanot.github.io/tenderai/", "https://fanot.github.io/tenderai/"),
+    run("; демонстрационная версия сервиса — "),
+    LINK("https://fanot.github.io/tenderai/demo.html", "https://fanot.github.io/tenderai/demo.html"),
+    run("; репозиторий исходного кода — "),
+    LINK("https://github.com/fanot/tenderai", "https://github.com/fanot/tenderai"),
+    run("."),
+  ])
 );
 
 children.push(H2("5.3 Результат работы"));
 children.push(
   P(
     "Работа выполнена в полном объёме. Создан и опубликован в сети Интернет сайт " +
-    "стартап-проекта со сведениями о продукте, рынке, дорожной карте, команде и партнёрах, " +
-    "а также с интерактивной демонстрационной версией сервиса."
+    "стартап-проекта с интерактивной демонстрационной версией сервиса."
   )
 );
 

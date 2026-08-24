@@ -190,7 +190,10 @@ td b{font-weight:600}
 .contacts{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
 @media(max-width:760px){.contacts{grid-template-columns:1fr}}
 .contacts .card{padding:20px}
-.contacts .k{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:4px}
+.contacts .k{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:6px}
+.contacts .org{font-size:16px; font-weight:600; margin-bottom:4px}
+.contacts .org-sub{font-size:13px; color:var(--muted); margin-top:4px; line-height:1.5}
+.contacts .org-line{font-size:14px; margin-bottom:4px}
 
 footer{border-top:1px solid var(--border); padding:34px 0; color:var(--muted); font-size:14px}
 .foot{display:flex; gap:16px; flex-wrap:wrap; align-items:center}
@@ -257,9 +260,7 @@ footer{border-top:1px solid var(--border); padding:34px 0; color:var(--muted); f
           <path d="M14 176 Q310 268 606 176" fill="none" stroke="#c3c9d0" stroke-width="2.5"/>
         </svg>
       </div>
-      <div class="txt">Проект реализован при поддержке Фонда содействия инновациям в рамках
-        программы «Студенческий стартап» мероприятия «Платформа университетского
-        технологического предпринимательства».</div>
+      <div class="txt">Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».</div>
     </div>
 
     <div class="hero-stats">
@@ -572,9 +573,7 @@ footer{border-top:1px solid var(--border); padding:34px 0; color:var(--muted); f
       </div>
     </div>
     <div class="grant-note">
-      <b>Проект реализован при поддержке Фонда содействия инновациям</b> в рамках программы
-      «Студенческий стартап» мероприятия «Платформа университетского технологического
-      предпринимательства».
+      Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».
     </div>
   </div>
 </section>
@@ -598,12 +597,23 @@ footer{border-top:1px solid var(--border); padding:34px 0; color:var(--muted); f
     <h2>Связаться с командой</h2>
     <p class="lead">Открыты к пилотным внедрениям, партнёрству и обратной связи по продукту.</p>
     <div class="contacts">
-      <div class="card"><div class="k">Электронная почта</div>
-        <a href="mailto:hello@tenderai.ru">hello@tenderai.ru</a></div>
-      <div class="card"><div class="k">Прототип сервиса</div>
-        <a href="tenderai-prototype.html">Открыть демо-версию</a></div>
-      <div class="card"><div class="k">Исходный код</div>
-        <a href="https://github.com/fanot/tenderai" target="_blank" rel="noopener">Репозиторий проекта</a></div>
+      <div class="card">
+        <div class="k">Организация</div>
+        <div class="org">ООО «НейроТендер»</div>
+        <div class="org-sub">ИНН 5406850880 · ОГРН 1255400030742</div>
+        <div class="org-sub">Юридический адрес:<br>634061, г. Томск,<br>ул. Красноармейская, д. 55/1, кв. 11</div>
+      </div>
+      <div class="card">
+        <div class="k">Связаться</div>
+        <div class="org-line">Email: <a href="mailto:karinaya94@gmail.com">karinaya94@gmail.com</a></div>
+        <div class="org-line">Телефон: <a href="tel:+79138868381">+7 (913) 886-83-81</a></div>
+        <div class="org-sub">Генеральный директор — Янышевская Карина Владимировна</div>
+      </div>
+      <div class="card">
+        <div class="k">Продукт</div>
+        <div class="org-line"><a href="tenderai-prototype.html">Открыть демо-версию сервиса</a></div>
+        <div class="org-line"><a href="https://github.com/fanot/tenderai" target="_blank" rel="noopener">Репозиторий проекта на GitHub</a></div>
+      </div>
     </div>
   </div>
 </section>
@@ -613,12 +623,16 @@ footer{border-top:1px solid var(--border); padding:34px 0; color:var(--muted); f
     <div class="foot">
       <span class="brand" style="font-size:15px"><span class="mark" style="width:24px;height:24px;font-size:12px">T</span> TenderAI</span>
       <span>Умный поиск тендеров с помощью искусственного интеллекта</span>
-      <span class="sp">© 2026 · Стартап-проект</span>
+      <span class="sp">© 2026 · ООО «НейроТендер»</span>
     </div>
+    <p style="margin:12px 0 0; font-size:13px; line-height:1.6">
+      ООО «НейроТендер» · ИНН 5406850880 · ОГРН 1255400030742<br>
+      Юридический адрес: 634061, г. Томск, ул. Красноармейская, д. 55/1, кв. 11<br>
+      Email: <a href="mailto:karinaya94@gmail.com">karinaya94@gmail.com</a> ·
+      Телефон: <a href="tel:+79138868381">+7 (913) 886-83-81</a>
+    </p>
     <p style="margin:14px 0 0; font-size:13px">
-      Проект реализован при поддержке Фонда содействия инновациям в рамках программы
-      «Студенческий стартап» мероприятия «Платформа университетского технологического
-      предпринимательства».
+      Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».
     </p>
   </div>
 </footer>

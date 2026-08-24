@@ -11,6 +11,7 @@ const {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle,
   Footer, PageNumber, convertMillimetersToTwip, LineRuleType, VerticalAlign,
+  ExternalHyperlink,
 } = require("docx");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -39,14 +40,33 @@ function cell(lines, { head = false, width, align = AlignmentType.LEFT } = {}) {
     shading: head ? { type: ShadingType.CLEAR, fill: "F2EDFE" } : undefined,
     margins: { top: 60, bottom: 60, left: 90, right: 90 },
     verticalAlign: VerticalAlign.TOP,
-    children: arr.map(
-      (t) =>
-        new Paragraph({
-          alignment: align,
-          spacing: { line: 240, lineRule: LineRuleType.AUTO },
-          children: [new TextRun({ text: t, font: FONT, size: CELL, bold: head })],
-        })
-    ),
+    children: arr.map((t) => {
+      // элемент вида {text, link} превращается в кликабельную гиперссылку
+      const kids =
+        t && typeof t === "object" && t.link
+          ? [
+              ...(t.text ? [new TextRun({ text: t.text, font: FONT, size: CELL })] : []),
+              new ExternalHyperlink({
+                link: t.link,
+                children: [
+                  new TextRun({
+                    text: t.label || t.link,
+                    font: FONT,
+                    size: CELL,
+                    style: "Hyperlink",
+                    color: "0563C1",
+                    underline: {},
+                  }),
+                ],
+              }),
+            ]
+          : [new TextRun({ text: String(t), font: FONT, size: CELL, bold: head })];
+      return new Paragraph({
+        alignment: align,
+        spacing: { line: 240, lineRule: LineRuleType.AUTO },
+        children: kids,
+      });
+    }),
   });
 }
 
@@ -125,10 +145,12 @@ rows.push(
 
 rows.push(
   row(2, "Создан сайт проекта", "Да", [
-    "Сайт стартап-проекта: https://fanot.github.io/tenderai/",
-    "Интерактивная демонстрационная версия сервиса: https://fanot.github.io/tenderai/demo.html",
-    "Исходный код проекта: https://github.com/fanot/tenderai",
-    "На главной странице размещены сведения о продукте, логотипы Фонда содействия инновациям и мероприятия «Платформа университетского технологического предпринимательства», а также указание на поддержку проекта. Публикация автоматизирована: изменения в репозитории обновляют сайт без ручных операций.",
+    { text: "Сайт стартап-проекта: ", link: "https://fanot.github.io/tenderai/" },
+    { text: "Интерактивная демонстрационная версия сервиса: ", link: "https://fanot.github.io/tenderai/demo.html" },
+    { text: "Исходный код проекта: ", link: "https://github.com/fanot/tenderai" },
+    "На главной странице размещены сведения о продукте, логотипы Фонда содействия инновациям и мероприятия «Платформа университетского технологического предпринимательства», а также дословная формулировка: «Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».»",
+    "В разделе «Контакты» и в нижнем колонтитуле размещены реквизиты и контактные данные организации: ООО «НейроТендер», ИНН 5406850880, ОГРН 1255400030742, юридический адрес 634061, г. Томск, ул. Красноармейская, д. 55/1, кв. 11, адрес электронной почты и телефон для связи.",
+    "Публикация автоматизирована: изменения в репозитории обновляют сайт без ручных операций.",
   ])
 );
 
