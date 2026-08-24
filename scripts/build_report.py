@@ -26,6 +26,12 @@ TOC_JSON = DIST / ".toc-pages.json"
 # поэтому нумерация страниц документа начинается со второй.
 TITLE_PAGE_OFFSET = 1
 
+# Объём отчёта, указываемый в реферате. Вёрстка LibreOffice, которой собирается
+# документ, плотнее вёрстки Word (нет самого шрифта Times New Roman, используется
+# метрически совместимый аналог), поэтому число страниц фиксируется по фактической
+# вёрстке в Word. None — брать значение из собранного PDF.
+FORCE_PAGES: int | None = 20
+
 
 def build(args: list[str]) -> None:
     subprocess.run([  # noqa: S603
@@ -87,7 +93,7 @@ def main() -> None:
         else:
             print(f"  ! не найден заголовок: {title}", file=sys.stderr)
 
-    total = len([p for p in pages if p.strip()]) + TITLE_PAGE_OFFSET
+    total = FORCE_PAGES or (len([p for p in pages if p.strip()]) + TITLE_PAGE_OFFSET)
     TOC_JSON.write_text(json.dumps(mapping, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print(f"Проход 2: сборка с номерами страниц (объём отчёта — {total} с.)…")
@@ -95,9 +101,8 @@ def main() -> None:
     to_pdf()
 
     after = len([p for p in page_texts() if p.strip()]) + TITLE_PAGE_OFFSET
-    status = "совпал" if after == total else f"ИЗМЕНИЛСЯ: было {total}, стало {after}"
     print(f"Готово: {DOCX}")
-    print(f"Объём после второго прохода {status}")
+    print(f"В реферате указано: {total} с. | вёрстка LibreOffice: {after} с.")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, ImageRun,
   Footer, PageNumber, convertMillimetersToTwip,
-  Tab, TabStopType, LeaderType, LineRuleType, ExternalHyperlink,
+  Tab, TabStopType, LeaderType, LineRuleType, ExternalHyperlink, TableOfContents,
 } = require("docx");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -80,9 +80,9 @@ function P(text, o = {}) {
 }
 
 /** Заголовок структурного элемента: по центру, прописными, с новой страницы */
-function HS(text, { first = false } = {}) {
+function HS(text, { first = false, inToc = true } = {}) {
   return new Paragraph({
-    heading: HeadingLevel.HEADING_1,
+    heading: inToc ? HeadingLevel.HEADING_1 : undefined,
     alignment: AlignmentType.CENTER,
     spacing: { line: LINE, after: 200 },
     pageBreakBefore: !first,
@@ -238,7 +238,7 @@ function TBL(caption, headers, rows, widths, { small = false, numeric = false } 
 const children = [];
 
 // ---------------------------- РЕФЕРАТ --------------------------------
-children.push(HS("Реферат", { first: true }));
+children.push(HS("Реферат", { first: true, inToc: false }));
 children.push(P(`Отчёт ${PAGES} с., 5 рис., 7 табл., 13 источников.`));
 children.push(P(""));
 children.push(
@@ -282,8 +282,16 @@ children.push(
 );
 
 // --------------------------- СОДЕРЖАНИЕ ------------------------------
-children.push(HS("Содержание"));
-TOC_ENTRIES.forEach(([lvl, title]) => children.push(TOCLINE(lvl, title)));
+children.push(HS("Содержание", { inToc: false }));
+// Содержание — автоматическое поле Word: номера страниц проставляются по фактической
+// вёрстке в Word, которая отличается от вёрстки сборщика
+children.push(
+  new TableOfContents("Содержание", {
+    hyperlink: true,
+    headingStyleRange: "1-2",
+    stylesWithLevels: [],
+  })
+);
 
 // ---------------------------- ВВЕДЕНИЕ -------------------------------
 children.push(HS("Введение"));
@@ -831,6 +839,8 @@ children.push(HS("Список использованных источников
 
 // =====================================================================
 const doc = new Document({
+  // Word обновляет поля (в том числе содержание) при открытии документа
+  features: { updateFields: true },
   creator: "Янышевская К. В.",
   title: "Отчёт о выполнении Работ (заключительный)",
   description: "Создание веб-сервиса умного поиска тендеров с помощью искусственного интеллекта",
